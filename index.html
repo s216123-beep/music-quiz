@@ -105,6 +105,23 @@
       margin: 0 0 10px 0;
       color: var(--canva-purple);
       font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #eee;
+      color: #888;
+      font-weight: normal;
+    }
+    
+    .status-badge.online {
+      background: #d4edda;
+      color: #155724;
     }
 
     .leaderboard-list {
@@ -394,7 +411,7 @@
       </div>
 
       <div class="leaderboard">
-        <h3>🏆 排行榜</h3>
+        <h3>🏆 排行榜 <span id="statusBadge" class="status-badge">檢查連線中...</span></h3>
         <ul class="leaderboard-list">
           <li class="leaderboard-item">載入中...</li>
         </ul>
@@ -469,7 +486,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
     // --- 全域變數 ---
@@ -487,12 +504,24 @@
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'music-quiz';
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
+    function updateStatus(isOnline) {
+      const badge = document.getElementById('statusBadge');
+      if (isOnline) {
+        badge.textContent = '● 全球連線中';
+        badge.className = 'status-badge online';
+      } else {
+        badge.textContent = '● 本機模式';
+        badge.className = 'status-badge';
+      }
+    }
+
     // --- Firebase 初始化 ---
     async function initFirebase() {
       // 如果環境變數中沒有 config，直接切換到本機模式
       if (Object.keys(firebaseConfig).length === 0) {
         console.warn("No firebase config found. Switching to Local Storage mode.");
         useLocalStorage = true;
+        updateStatus(false);
         loadLocalLeaderboard();
         return;
       }
@@ -505,6 +534,7 @@
         onAuthStateChanged(auth, (user) => {
           if (user) {
             currentUser = user;
+            updateStatus(true);
             listenToLeaderboard();
           }
         });
@@ -519,6 +549,7 @@
         // 如果 Firebase 連線失敗，也切換到本機模式，而不是顯示錯誤
         console.warn("Firebase failed, falling back to Local Storage.");
         useLocalStorage = true;
+        updateStatus(false);
         loadLocalLeaderboard();
       }
     }
@@ -815,6 +846,16 @@
       if (!currentUser || !db) return;
       try {
         const userScoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'scores', currentUser.uid);
+        
+        // 實作最高分邏輯：先讀取，確認破紀錄才寫入
+        const docSnap = await getDoc(userScoreRef);
+        if (docSnap.exists()) {
+           const oldScore = docSnap.data().score || 0;
+           if (score <= oldScore) {
+             return; // 沒破紀錄，不更新
+           }
+        }
+
         await setDoc(userScoreRef, {
           name: userName,
           score: score,
@@ -863,9 +904,12 @@
             const existingIndex = scores.findIndex(s => s.uid === sessionUid);
             
             if (existingIndex >= 0) {
-                scores[existingIndex].score = score;
-                scores[existingIndex].name = userName; // 更新名稱
-                scores[existingIndex].timestamp = Date.now();
+                // 本機也要實作最高分邏輯
+                if (score > scores[existingIndex].score) {
+                    scores[existingIndex].score = score;
+                    scores[existingIndex].name = userName; 
+                    scores[existingIndex].timestamp = Date.now();
+                }
             } else {
                 scores.push({
                     uid: sessionUid,
