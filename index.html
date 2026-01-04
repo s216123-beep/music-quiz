@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canva Style Music Quiz</title>
+  <style>
+    /* 全域設定 */
+    :root {
+      --canva-cyan: #00C4CC;
+      --canva-pink: #FF66C4;
+      --canva-purple: #7D2AE8;
+      --text-dark: #2D3436;
+      --text-light: #7f8c8d;
+      --bg-gradient: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+    }
+
+    body {
+      font-family: "PingFang TC", "Quicksand", "Microsoft JhengHei", sans-serif;
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text-dark);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    /* 卡片主體 */
+    .canva-card {
+      background: white;
+      width: 100%;
+      max-width: 450px;
+      padding: 40px 30px;
+      border-radius: 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transform: translateZ(0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 裝飾性元素 */
+    .decorator-circle {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      background: var(--canva-cyan);
+      border-radius: 50%;
+      opacity: 0.1;
+      top: -40px;
+      right: -40px;
+      pointer-events: none;
+    }
+
+    .decorator-dot {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: var(--canva-pink);
+      border-radius: 50%;
+      bottom: 20px;
+      left: 20px;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: var(--canva-cyan);
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      color: var(--text-light);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* 排行榜樣式 */
+    .leaderboard {
+      width: 100%;
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 15px;
+      margin-top: 20px;
+      box-sizing: border-box;
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #edf2f7;
+    }
+
+    .leaderboard h3 {
+      margin: 0 0 10px 0;
+      color: var(--canva-purple);
+      font-size: 1.1rem;
+    }
+
+    .leaderboard-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      text-align: left;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+
+    .leaderboard-item:last-child {
+      border-bottom: none;
+    }
+
+    .rank-badge {
+      display: inline-block;
+      min-width: 25px;
+      font-weight: bold;
+      color: var(--canva-light);
+    }
+    
+    .rank-1 { color: #FFD700; }
+    .rank-2 { color: #C0C0C0; }
+    .rank-3 { color: #CD7F32; }
+
+    .score-badge {
+      font-weight: bold;
+      color: var(--canva-pink);
+    }
+
+    /* 播放狀態視覺化 */
+    .visualizer {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      height: 40px;
+      gap: 4px;
+      margin-bottom: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .visualizer.active {
+      opacity: 1;
+    }
+
+    .bar {
+      width: 4px;
+      background: var(--canva-cyan);
+      border-radius: 2px;
+      animation: bounce 0.5s ease-in-out infinite alternate;
+      will-change: height;
+    }
+
+    @keyframes bounce {
+      from { height: 5px; }
+      to { height: 30px; }
+    }
+
+    /* 按鈕樣式 */
+    .btn-main {
+      background-color: var(--canva-cyan);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 16px 32px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(0, 196, 204, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-main:hover {
+      transform: translateY(-3px) scale(1.02);
+      background-color: #05d1d8;
+      box-shadow: 0 8px 20px rgba(0, 196, 204, 0.4);
+    }
+
+    .btn-main:disabled {
+      background-color: #b2bec3;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-next {
+      background-color: var(--canva-purple);
+      box-shadow: 0 4px 15px rgba(125, 42, 232, 0.3);
+      display: none; 
+    }
+
+    .btn-next:hover {
+      background-color: #8e44ad;
+      box-shadow: 0 8px 20px rgba(125, 42, 232, 0.4);
+    }
+
+    /* 音樂控制項 */
+    audio {
+      width: 100%;
+      margin: 15px 0;
+      filter: sepia(20%) saturate(70%) grayscale(1);
+      height: 35px;
+    }
+
+    /* 輸入區塊 */
+    .input-wrapper {
+      position: relative;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 16px 20px;
+      border: 2px solid #edf2f7;
+      border-radius: 16px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+      background-color: #f8fafc;
+      text-align: center;
+    }
+
+    input:focus {
+      border-color: var(--canva-pink);
+      background-color: white;
+      box-shadow: 0 0 0 4px rgba(255, 102, 196, 0.1);
+    }
+
+    .btn-submit {
+      background: linear-gradient(to right, var(--canva-pink), #ff8ec7);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      width: 100%;
+      margin-top: 15px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, filter 0.2s;
+    }
+
+    .btn-submit:hover {
+      filter: brightness(1.05);
+      transform: translateY(-2px);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    /* 提示訊息 */
+    #message {
+      margin-top: 15px;
+      font-size: 1rem;
+      min-height: 1.5em;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 10px;
+      transition: opacity 0.3s;
+      width: 100%;
+    }
+
+    .status-success {
+      background-color: #e6fffa;
+      color: #2d6a4f;
+    }
+
+    .status-error {
+      background-color: #fff5f5;
+      color: #c53030;
+    }
+
+    .status-info {
+      color: var(--canva-purple);
+    }
+
+    /* 頁面切換控制 */
+    .screen {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .current-score-display {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 0.9rem;
+      color: var(--text-light);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 5px 10px;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* 結算頁面樣式 */
+    .final-score-box {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin: 15px 0;
+      padding: 15px;
+      background: #fff0f6;
+      border: 2px solid var(--canva-pink);
+      border-radius: 20px;
+      width: 100%;
+      box-sizing: border-box;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .celebrate-text {
+      color: var(--canva-purple);
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="canva-card">
+    <div class="decorator-circle"></div>
+    <div class="decorator-dot"></div>
+
+    <h1>Music Quiz</h1>
+    
+    <!-- 1. 登入與排行榜畫面 -->
+    <div id="loginScreen" class="screen active">
+      <p class="subtitle">輸入暱稱，挑戰排行榜冠軍！</p>
+      
+      <div class="input-wrapper">
+        <input type="text" id="username" placeholder="你的暱稱 (例如: 音樂小天才)" maxlength="10">
+        <button class="btn-submit" id="loginBtn">開始挑戰</button>
+      </div>
+
+      <div class="leaderboard">
+        <h3>🏆 排行榜</h3>
+        <ul class="leaderboard-list">
+          <li class="leaderboard-item">載入中...</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 2. 遊戲主畫面 -->
+    <div id="gameScreen" class="screen">
+      <div class="current-score-display">目前得分: <span id="currentScore">0</span></div>
+      <p class="subtitle" style="margin-top: 20px;">聽聽旋律，挑戰你的音樂敏感度！</p>
+
+      <!-- 動態音量條 -->
+      <div id="visualizer" class="visualizer">
+        <div class="bar" style="animation-delay: 0.0s"></div>
+        <div class="bar" style="animation-delay: 0.2s"></div>
+        <div class="bar" style="animation-delay: 0.4s"></div>
+        <div class="bar" style="animation-delay: 0.1s"></div>
+        <div class="bar" style="animation-delay: 0.3s"></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+        <button id="startBtn" class="btn-main" onclick="playMusic()">
+          <span>🎵</span> 播放音樂
+        </button>
+        
+        <button id="nextBtn" class="btn-main btn-next" onclick="playMusic()">
+          <span>⏭️</span> 下一首
+        </button>
+      </div>
+
+      <!-- 加入 onError 處理 -->
+      <audio id="player" preload="auto" onplay="setVisualizer(true)" onpause="setVisualizer(false)" onended="setVisualizer(false)" onerror="handleAudioError()"></audio>
+
+      <div id="quizSection" style="width: 100%;">
+        <div class="input-wrapper">
+          <input type="text" id="guess" placeholder="這首歌叫什麼名字？" onkeypress="handleKeyPress(event)">
+          <button id="submitBtn" class="btn-submit" onclick="checkAnswer()">提交答案</button>
+        </div>
+      </div>
+
+      <div id="message"></div>
+    </div>
+
+    <!-- 3. 通關結算畫面 -->
+    <div id="resultScreen" class="screen">
+      <h2 style="color: var(--canva-cyan); margin: 0;">🎉 恭喜通關！ 🎉</h2>
+      <p class="subtitle celebrate-text">太神啦！簡直是行走的點歌機！🎤</p>
+      
+      <div class="final-score-box">
+        最終得分：<span id="finalScore">0</span> / 5
+      </div>
+
+      <div class="leaderboard">
+        <h3>🏆 最終排行榜</h3>
+        <ul class="leaderboard-list">
+          <li class="leaderboard-item">載入中...</li>
+        </ul>
+      </div>
+
+      <button class="btn-main" style="background-color: var(--canva-pink); margin-top: 20px;" onclick="location.reload()">
+        <span>🔄</span> 重新挑戰
+      </button>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    // --- 全域變數 ---
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let currentScore = 0;
+    let userName = "";
+    let useLocalStorage = false; // 標記是否使用本機儲存
+    const sessionUid = 'local_' + Date.now(); // 本機模式下的暫時 ID
+    
+    // 追蹤已答對的題目索引
+    let solvedIndices = []; 
+    
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'music-quiz';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+    // --- Firebase 初始化 ---
+    async function initFirebase() {
+      // 如果環境變數中沒有 config，直接切換到本機模式
+      if (Object.keys(firebaseConfig).length === 0) {
+        console.warn("No firebase config found. Switching to Local Storage mode.");
+        useLocalStorage = true;
+        loadLocalLeaderboard();
+        return;
+      }
+
+      try {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentUser = user;
+            listenToLeaderboard();
+          }
+        });
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (e) {
+        console.error("Firebase init/auth failed:", e);
+        // 如果 Firebase 連線失敗，也切換到本機模式，而不是顯示錯誤
+        console.warn("Firebase failed, falling back to Local Storage.");
+        useLocalStorage = true;
+        loadLocalLeaderboard();
+      }
+    }
+    initFirebase();
+
+    // --- 遊戲邏輯 ---
+    const songLibrary = [
+      { file: "songs/如果呢 .mp3", title: "如果呢" },
+      { file: "songs/碎碎念.mp3", title: "碎碎念" },
+      { file: "songs/節約用愛 .mp3", title: "節約用愛" },
+      { file: "songs/摯友♪.mp3", title: "摯友" },
+      { file: "songs/離開我的依賴.mp3", title: "離開我的依賴" }
+    ];
+
+    let currentSongIndex = null;
+    let isGameStarted = false;
+    let isLoading = false;
+
+    window.handleLogin = async () => {
+      const input = document.getElementById("username");
+      const name = input.value.trim();
+      if (!name) {
+        alert("請輸入暱稱！");
+        return;
+      }
+      userName = name;
+      
+      const loginBtn = document.getElementById("loginBtn");
+      loginBtn.innerHTML = "載入中...";
+      loginBtn.disabled = true;
+      
+      document.getElementById("loginScreen").classList.remove("active");
+      document.getElementById("gameScreen").classList.add("active");
+      
+      setTimeout(() => {
+        playMusic();
+      }, 100);
+    };
+
+    document.getElementById("username").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        window.handleLogin();
+      }
+    });
+    
+    document.getElementById("loginBtn").addEventListener("click", window.handleLogin);
+
+    window.setVisualizer = (active) => {
+      const viz = document.getElementById("visualizer");
+      if (active) viz.classList.add("active");
+      else viz.classList.remove("active");
+    };
+    
+    // 處理音訊錯誤
+    window.handleAudioError = () => {
+       console.error("Audio error occurred for file:", songLibrary[currentSongIndex].file);
+       window.showMessage("⚠️ 無法載入此歌曲 (可能是檔案不存在或路徑錯誤)", "status-error");
+       
+       // 讓按鈕恢復，允許跳過
+       const startBtn = document.getElementById("startBtn");
+       const nextBtn = document.getElementById("nextBtn");
+       
+       startBtn.style.display = "none"; // 既然失敗，就用 Next 跳過
+       nextBtn.style.display = "inline-flex"; 
+       nextBtn.innerHTML = '<span>⏭️</span> 跳過這首';
+       nextBtn.disabled = false;
+       isLoading = false;
+    };
+
+    window.playMusic = async () => {
+      if (isLoading) return;
+      
+      // 1. 篩選出還沒答對的歌曲索引
+      const availableIndices = songLibrary.map((_, index) => index).filter(index => !solvedIndices.includes(index));
+
+      // 2. 如果沒有剩餘歌曲，表示全破
+      if (availableIndices.length === 0) {
+        showResultScreen();
+        return;
+      }
+
+      const startBtn = document.getElementById("startBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const player = document.getElementById("player");
+
+      isLoading = true;
+      const originalStartText = startBtn.innerHTML;
+      const originalNextText = nextBtn.innerHTML;
+      
+      startBtn.innerHTML = '<span>⏳</span> 載入中...';
+      startBtn.disabled = true;
+      nextBtn.innerHTML = '<span>⏳</span> 載入中...';
+      nextBtn.disabled = true;
+
+      // 3. 從剩餘歌曲中隨機挑選
+      let randomIndex = Math.floor(Math.random() * availableIndices.length);
+      let nextIndex = availableIndices[randomIndex];
+
+      // 嘗試避免連續重複播放同一首（如果還有其他選擇）
+      if (availableIndices.length > 1 && nextIndex === currentSongIndex) {
+         nextIndex = availableIndices[(randomIndex + 1) % availableIndices.length];
+      }
+      
+      currentSongIndex = nextIndex;
+      player.src = songLibrary[currentSongIndex].file;
+      player.load();
+
+      try {
+        await player.play();
+        isGameStarted = true;
+        window.showMessage("🎧 音樂響起，猜猜看吧！", "status-info");
+        
+        startBtn.style.display = "none";
+        nextBtn.style.display = "none";
+        document.getElementById("quizSection").style.opacity = "1";
+        document.getElementById("guess").disabled = false;
+        document.getElementById("submitBtn").disabled = false;
+        document.getElementById("guess").value = "";
+        
+        setTimeout(() => {
+           document.getElementById("guess").focus();
+        }, 100);
+
+        // Reset btns
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<span>🎵</span> 播放音樂';
+        nextBtn.disabled = false;
+        nextBtn.innerHTML = '<span>⏭️</span> 下一首';
+
+      } catch (e) {
+        // 如果是瀏覽器阻擋自動播放，或是其他錯誤 (onerror 會額外觸發)
+        console.error("Play failed:", e);
+        if (e.name === 'NotAllowedError') {
+             window.showMessage("請手動點擊播放器按鈕 ▶", "status-info");
+             player.controls = true;
+        }
+        
+        startBtn.disabled = false;
+        startBtn.innerHTML = originalStartText;
+        nextBtn.disabled = false;
+        nextBtn.innerHTML = originalNextText;
+      } finally {
+        isLoading = false;
+      }
+    };
+
+    window.showMessage = (text, className) => {
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = text;
+      messageDiv.className = className;
+    };
+
+    window.showResultScreen = () => {
+      document.getElementById("gameScreen").classList.remove("active");
+      document.getElementById("resultScreen").classList.add("active");
+      document.getElementById("finalScore").innerText = currentScore;
+    };
+
+    window.checkAnswer = async () => {
+      if (!isGameStarted) return;
+
+      const guessInput = document.getElementById("guess").value.trim();
+      
+      if (!guessInput) {
+        window.showMessage("請輸入答案後再提交", "status-error");
+        return;
+      }
+
+      const correctAnswer = songLibrary[currentSongIndex].title;
+
+      if(guessInput === correctAnswer) {
+        // 答對邏輯
+        const player = document.getElementById("player");
+        player.pause();
+        player.currentTime = 0;
+        window.setVisualizer(false);
+
+        // 記錄此題已答對，避免重複出現
+        if (!solvedIndices.includes(currentSongIndex)) {
+            solvedIndices.push(currentSongIndex);
+            
+            // 更新分數
+            currentScore++;
+            document.getElementById("currentScore").innerText = currentScore;
+            await saveScore(currentScore);
+        }
+
+        // 檢查是否全破
+        if (solvedIndices.length === songLibrary.length) {
+            window.showMessage("🏆 太強了！全部通關！ (+1分) 🏆", "status-success");
+            // 稍等一下再跳轉，讓玩家看到訊息
+            setTimeout(() => {
+              showResultScreen();
+            }, 1500);
+        } else {
+            window.showMessage("✨ 太棒了！答對了 (+1分) ✨", "status-success");
+            // 顯示下一首按鈕
+            document.getElementById("nextBtn").style.display = "inline-flex";
+            document.getElementById("guess").disabled = true;
+            document.getElementById("submitBtn").disabled = true;
+        }
+
+      } else {
+        window.showMessage("哎呀，差一點點！再聽一次看看？ 💪", "status-error");
+      }
+    };
+
+    window.handleKeyPress = (event) => {
+      if (event.key === "Enter") {
+        const guessInput = document.getElementById("guess");
+        if (!guessInput.disabled) window.checkAnswer();
+      }
+    };
+
+    // --- 資料儲存邏輯 (支援 Firebase 與 本機儲存) ---
+    
+    async function saveScore(score) {
+      // 如果使用本機模式
+      if (useLocalStorage) {
+         saveLocalScore(score);
+         return;
+      }
+
+      if (!currentUser || !db) return;
+      try {
+        const userScoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'scores', currentUser.uid);
+        await setDoc(userScoreRef, {
+          name: userName,
+          score: score,
+          timestamp: Date.now()
+        }, { merge: true });
+      } catch (e) {
+        console.error("Error saving score to Firebase:", e);
+        // 如果 Firebase 寫入失敗，嘗試降級到本機模式
+        useLocalStorage = true;
+        saveLocalScore(score);
+      }
+    }
+
+    function listenToLeaderboard() {
+      if (useLocalStorage) {
+          loadLocalLeaderboard();
+          return;
+      }
+
+      if (!db) return;
+      const scoresCollection = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+      
+      onSnapshot(scoresCollection, (snapshot) => {
+        const scores = [];
+        snapshot.forEach((doc) => {
+          scores.push(doc.data());
+        });
+
+        scores.sort((a, b) => b.score - a.score);
+        updateLeaderboardDisplay(scores);
+      }, (error) => {
+        console.error("Leaderboard error:", error);
+        // 出錯時切換到本機
+        useLocalStorage = true;
+        loadLocalLeaderboard();
+      });
+    }
+
+    // --- 本機儲存 (Local Storage) 相關函式 ---
+    function saveLocalScore(score) {
+        try {
+            const lsKey = 'music_quiz_scores';
+            let scores = JSON.parse(localStorage.getItem(lsKey) || '[]');
+            
+            // 檢查該使用者是否已有紀錄 (使用 sessionUid)
+            const existingIndex = scores.findIndex(s => s.uid === sessionUid);
+            
+            if (existingIndex >= 0) {
+                scores[existingIndex].score = score;
+                scores[existingIndex].name = userName; // 更新名稱
+                scores[existingIndex].timestamp = Date.now();
+            } else {
+                scores.push({
+                    uid: sessionUid,
+                    name: userName,
+                    score: score,
+                    timestamp: Date.now()
+                });
+            }
+            
+            localStorage.setItem(lsKey, JSON.stringify(scores));
+            loadLocalLeaderboard(); // 刷新顯示
+        } catch (e) {
+            console.error("Local storage error:", e);
+        }
+    }
+
+    function loadLocalLeaderboard() {
+        try {
+            const lsKey = 'music_quiz_scores';
+            let scores = JSON.parse(localStorage.getItem(lsKey) || '[]');
+            
+            // 排序
+            scores.sort((a, b) => b.score - a.score);
+            
+            // 顯示
+            updateLeaderboardDisplay(scores, "目前還沒有人上榜 (本機模式)，快來當第一名！");
+        } catch (e) {
+            console.error("Local storage load error:", e);
+        }
+    }
+
+    // 統一更新所有排行榜列表 (登入頁 & 結算頁)
+    function updateLeaderboardDisplay(scores, emptyMessage = "目前還沒有人上榜，快來當第一名！") {
+      const lists = document.querySelectorAll(".leaderboard-list");
+      
+      lists.forEach(list => {
+        list.innerHTML = "";
+        
+        if (scores.length === 0) {
+          list.innerHTML = `<li class='leaderboard-item'>${emptyMessage}</li>`;
+          return;
+        }
+
+        scores.forEach((item, index) => {
+          const li = document.createElement("li");
+          li.className = "leaderboard-item";
+          
+          let rankClass = "";
+          if (index === 0) rankClass = "rank-1";
+          else if (index === 1) rankClass = "rank-2";
+          else if (index === 2) rankClass = "rank-3";
+
+          li.innerHTML = `
+            <span>
+              <span class="rank-badge ${rankClass}">#${index + 1}</span>
+              ${escapeHtml(item.name)}
+            </span>
+            <span class="score-badge">${item.score} 題</span>
+          `;
+          list.appendChild(li);
+        });
+      });
+    }
+
+    function escapeHtml(text) {
+      if (!text) return text;
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+  </script>
+
+</body>
+</html>
