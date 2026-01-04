@@ -10,6 +10,7 @@
       --canva-cyan: #00C4CC;
       --canva-pink: #FF66C4;
       --canva-purple: #7D2AE8;
+      --canva-orange: #fab1a0;
       --text-dark: #2D3436;
       --text-light: #7f8c8d;
       --bg-gradient: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
@@ -271,6 +272,26 @@
       transform: translateY(0);
     }
 
+    /* 次要按鈕 (看答案) */
+    .btn-secondary {
+      background-color: #f1f2f6; 
+      color: var(--text-light);
+      border: 2px solid #dfe6e9;
+      border-radius: 14px;
+      padding: 12px;
+      width: 100%;
+      margin-top: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background-color: #dfe6e9;
+      color: var(--text-dark);
+    }
+
     /* 提示訊息 */
     #message {
       margin-top: 15px;
@@ -402,6 +423,11 @@
         <button id="nextBtn" class="btn-main btn-next" onclick="playMusic()">
           <span>⏭️</span> 下一首
         </button>
+        
+        <!-- 新增暫停按鈕 -->
+        <button id="pauseBtn" class="btn-main" style="display:none; background-color: var(--canva-orange);" onclick="togglePause()">
+          <span>⏸️</span> 暫停播放
+        </button>
       </div>
 
       <!-- 加入 onError 處理 -->
@@ -411,6 +437,7 @@
         <div class="input-wrapper">
           <input type="text" id="guess" placeholder="這首歌叫什麼名字？" onkeypress="handleKeyPress(event)">
           <button id="submitBtn" class="btn-submit" onclick="checkAnswer()">提交答案</button>
+          <button id="showAnswerBtn" class="btn-secondary" onclick="showAnswer()">👀 偷看答案</button>
         </div>
       </div>
 
@@ -553,12 +580,31 @@
        // 讓按鈕恢復，允許跳過
        const startBtn = document.getElementById("startBtn");
        const nextBtn = document.getElementById("nextBtn");
+       const pauseBtn = document.getElementById("pauseBtn");
        
        startBtn.style.display = "none"; // 既然失敗，就用 Next 跳過
        nextBtn.style.display = "inline-flex"; 
        nextBtn.innerHTML = '<span>⏭️</span> 跳過這首';
        nextBtn.disabled = false;
+       pauseBtn.style.display = "none"; // 隱藏暫停
        isLoading = false;
+       
+       // 隱藏偷看答案按鈕
+       document.getElementById("showAnswerBtn").style.display = "none";
+    };
+
+    // 新增：切換暫停/播放
+    window.togglePause = () => {
+      const player = document.getElementById("player");
+      const btn = document.getElementById("pauseBtn");
+      
+      if (player.paused) {
+        player.play();
+        btn.innerHTML = '<span>⏸️</span> 暫停播放';
+      } else {
+        player.pause();
+        btn.innerHTML = '<span>▶️</span> 繼續播放';
+      }
     };
 
     window.playMusic = async () => {
@@ -575,6 +621,7 @@
 
       const startBtn = document.getElementById("startBtn");
       const nextBtn = document.getElementById("nextBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
       const player = document.getElementById("player");
 
       isLoading = true;
@@ -606,10 +653,19 @@
         
         startBtn.style.display = "none";
         nextBtn.style.display = "none";
+        
+        // 顯示暫停按鈕並重置狀態
+        pauseBtn.style.display = "inline-flex";
+        pauseBtn.innerHTML = '<span>⏸️</span> 暫停播放';
+
         document.getElementById("quizSection").style.opacity = "1";
         document.getElementById("guess").disabled = false;
         document.getElementById("submitBtn").disabled = false;
         document.getElementById("guess").value = "";
+        
+        // 確保偷看答案按鈕顯示
+        document.getElementById("showAnswerBtn").style.display = "block";
+        document.getElementById("showAnswerBtn").disabled = false;
         
         setTimeout(() => {
            document.getElementById("guess").focus();
@@ -650,6 +706,43 @@
       document.getElementById("finalScore").innerText = currentScore;
     };
 
+    // 新增：顯示答案功能
+    window.showAnswer = () => {
+      if (!isGameStarted) return;
+      
+      const currentSong = songLibrary[currentSongIndex];
+      
+      // 停止播放
+      const player = document.getElementById("player");
+      player.pause();
+      window.setVisualizer(false);
+      
+      // 隱藏暫停按鈕
+      document.getElementById("pauseBtn").style.display = "none";
+
+      // 顯示訊息
+      window.showMessage(`這首歌是：${currentSong.title}`, "status-info");
+      
+      // 禁用輸入與按鈕
+      document.getElementById("guess").disabled = true;
+      document.getElementById("submitBtn").disabled = true;
+      document.getElementById("showAnswerBtn").style.display = "none";
+      
+      // 標記為已處理（但不加分）
+      if (!solvedIndices.includes(currentSongIndex)) {
+          solvedIndices.push(currentSongIndex);
+      }
+      
+      // 檢查是否結束或顯示下一首
+      if (solvedIndices.length === songLibrary.length) {
+          setTimeout(() => {
+             window.showResultScreen();
+          }, 2000);
+      } else {
+          document.getElementById("nextBtn").style.display = "inline-flex";
+      }
+    };
+
     window.checkAnswer = async () => {
       if (!isGameStarted) return;
 
@@ -668,6 +761,9 @@
         player.pause();
         player.currentTime = 0;
         window.setVisualizer(false);
+
+        // 隱藏暫停按鈕
+        document.getElementById("pauseBtn").style.display = "none";
 
         // 記錄此題已答對，避免重複出現
         if (!solvedIndices.includes(currentSongIndex)) {
@@ -692,6 +788,7 @@
             document.getElementById("nextBtn").style.display = "inline-flex";
             document.getElementById("guess").disabled = true;
             document.getElementById("submitBtn").disabled = true;
+            document.getElementById("showAnswerBtn").style.display = "none"; // 答對也隱藏偷看
         }
 
       } else {
