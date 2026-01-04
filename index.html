@@ -112,7 +112,7 @@
     
     .status-badge {
       font-size: 0.7rem;
-      padding: 2px 8px;
+      padding: 4px 8px;
       border-radius: 10px;
       background: #eee;
       color: #888;
@@ -122,6 +122,11 @@
     .status-badge.online {
       background: #d4edda;
       color: #155724;
+    }
+
+    .status-badge.offline {
+      background: #f8d7da;
+      color: #721c24;
     }
 
     .leaderboard-list {
@@ -411,7 +416,7 @@
       </div>
 
       <div class="leaderboard">
-        <h3>🏆 排行榜 <span id="statusBadge" class="status-badge">檢查連線中...</span></h3>
+        <h3>🏆 排行榜 <span id="statusBadge" class="status-badge">連線中...</span></h3>
         <ul class="leaderboard-list">
           <li class="leaderboard-item">載入中...</li>
         </ul>
@@ -510,8 +515,8 @@
         badge.textContent = '● 全球連線中';
         badge.className = 'status-badge online';
       } else {
-        badge.textContent = '● 本機模式';
-        badge.className = 'status-badge';
+        badge.textContent = '● 連線失敗 (本機模式)';
+        badge.className = 'status-badge offline';
       }
     }
 
@@ -865,6 +870,7 @@
         console.error("Error saving score to Firebase:", e);
         // 如果 Firebase 寫入失敗，嘗試降級到本機模式
         useLocalStorage = true;
+        updateStatus(false);
         saveLocalScore(score);
       }
     }
@@ -890,6 +896,7 @@
         console.error("Leaderboard error:", error);
         // 出錯時切換到本機
         useLocalStorage = true;
+        updateStatus(false);
         loadLocalLeaderboard();
       });
     }
@@ -987,4 +994,3 @@
   </script>
 
 </body>
-</html>
